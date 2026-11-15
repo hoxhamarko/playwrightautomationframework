@@ -1,0 +1,99 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run my test",
+            "type": "shell",
+            "command": ".\\gradlew.bat test \"-Ptags=@flashscore or @flashscore1\" -PflashscoreUrl=https://www.flashscore.com/ -PlivescoreUrl=https://www.livescore.com/en/ -Pheadless=false",
+            "group": { "kind": "test", "isDefault": true },
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "Test: run with prompts (tags, url, credentials)",
+            "type": "shell",
+            "command": ".\\gradlew.bat",
+            "args": [
+                "test",
+                { "value": "-Ptags=${input:tags}", "quoting": "strong" },
+                { "value": "-Purl=${input:url}", "quoting": "strong" },
+                { "value": "-Pusername=${input:username}", "quoting": "strong" },
+                { "value": "-Ppassword=${input:password}", "quoting": "strong" },
+                { "value": "-Pheadless=${input:headless}", "quoting": "strong" }
+            ],
+            "group": "test",
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "Test: custom Gradle arguments",
+            "type": "shell",
+            "command": ".\\gradlew.bat ${input:gradleArgs}",
+            "group": "test",
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "Test: all @ui",
+            "type": "shell",
+            "command": ".\\gradlew.bat test -Ptags=@ui",
+            "group": "test",
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "Test: all @ui (visible browser)",
+            "type": "shell",
+            "command": ".\\gradlew.bat test -Ptags=@ui -Pheadless=false",
+            "group": "test",
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "Install Playwright browsers",
+            "type": "shell",
+            "command": ".\\gradlew.bat installBrowsers",
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "tags",
+            "type": "promptString",
+            "description": "Cucumber tags, e.g. @ui, @testlogin, @ui and not @wip (empty = all tests)",
+            "default": "@ui"
+        },
+        {
+            "id": "url",
+            "type": "promptString",
+            "description": "Base URL (empty = value from qa.properties)",
+            "default": ""
+        },
+        {
+            "id": "username",
+            "type": "promptString",
+            "description": "Username (empty = value from qa.properties)",
+            "default": ""
+        },
+        {
+            "id": "password",
+            "type": "promptString",
+            "description": "Password (empty = value from qa.properties)",
+            "password": true,
+            "default": ""
+        },
+        {
+            "id": "headless",
+            "type": "pickString",
+            "description": "Headless browser?",
+            "options": ["true", "false"],
+            "default": "true"
+        },
+        {
+            "id": "gradleArgs",
+            "type": "promptString",
+            "description": "Gradle arguments",
+            "default": "test -Ptags=@ui -Purl=https://the-internet.herokuapp.com -Pusername=tomsmith -Pheadless=false"
+        }
+    ]
+}

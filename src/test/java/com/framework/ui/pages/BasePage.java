@@ -1,0 +1,22 @@
+package com.framework.ui.pages;
+
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Page;
+
+public abstract class BasePage {
+
+    protected final Page page;
+
+    protected BasePage(Page page) {
+        this.page = page;
+    }
+
+    /** Relative paths resolve against ui.baseUrl. */
+    public void open(String path) {
+        page.navigate(path);
+    }
+
+    protected Locator locator(String selector) {
+        return page.locator(selector);
+    }
+}

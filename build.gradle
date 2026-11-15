@@ -1,0 +1,81 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.framework'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'io.cucumber:cucumber-java:7.20.1'
+    testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.20.1'
+    testImplementation 'io.cucumber:cucumber-picocontainer:7.20.1'
+    testImplementation 'org.junit.platform:junit-platform-suite:1.11.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.3'
+    testImplementation 'com.microsoft.playwright:playwright:1.48.0'
+    testImplementation 'com.oracle.database.jdbc:ojdbc11:23.5.0.24.07'
+    testImplementation 'org.assertj:assertj-core:3.26.3'
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+}
+
+// Downloads the Playwright browsers. Run once: ./gradlew installBrowsers
+tasks.register('installBrowsers', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.microsoft.playwright.CLI'
+    args = ['install', 'chromium']
+}
+
+test {
+    useJUnitPlatform()
+    outputs.upToDateWhen { false }
+    systemProperty 'env', System.getProperty('env', 'qa')
+    // -Pheadless=false or -Dheadless=false
+    systemProperty 'headless', System.getProperty('headless') ?: (project.hasProperty('headless') ? project.property('headless') : 'true')
+    systemProperties System.properties.findAll { key, value ->
+        ['ui.', 'api.', 'db.'].any { key.toString().startsWith(it) }
+    }
+    // Any -Pui.*, -Papi.*, -Pdb.* property is forwarded too, e.g. -Pui.livescore.url=https://...
+    project.properties.findAll { key, value ->
+        value != null && ['ui.', 'api.', 'db.'].any { key.toString().startsWith(it) }
+    }.each { key, value -> systemProperty key.toString(), value.toString() }
+    // -P<site>Url=... -> ui.<site>.url, e.g. -PflashscoreUrl=https://www.flashscore.com/
+    project.properties.each { key, value ->
+        def m = key.toString() =~ /^([a-z]\w*?)Url$/
+        if (m && !(m[0][1] in ['api', 'db']) && value?.toString()?.trim()) {
+            systemProperty "ui.${m[0][1]}.url".toString(), value.toString()
+        }
+    }
+    // Short -P aliases for config keys, e.g. -Purl=... -> ui.baseUrl
+    [url: 'ui.baseUrl', username: 'ui.username', password: 'ui.password',
+     apiUrl: 'api.baseUrl', apiToken: 'api.token',
+     dbUrl: 'db.url', dbUser: 'db.user', dbPassword: 'db.password'].each { alias, key ->
+        if (project.hasProperty(alias) && project.property(alias).toString().trim()) {
+            systemProperty key, project.property(alias)
+        }
+    }
+    String tags = System.getProperty('tags') ?: (project.hasProperty('tags') ? project.property('tags') : null)
+    // No tags given -> run only @ui. Use -Ptags=all to run every scenario (needs mock API and DB).
+    if (!tags?.trim()) {
+        tags = '@ui'
+    }
+    if (tags != 'all') {
+        systemProperty 'cucumber.filter.tags', tags
+    }
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+    }
+}
+
+tasks.register('mockApi', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.framework.mock.MockApiServer'
+}
